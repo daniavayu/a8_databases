@@ -11,37 +11,45 @@ import os
 import threading
 import webbrowser
 
+# Add ChromaDB and connect to ChromaDB foldeR:
+import chromadb
+CHROMA_PATH = "chroma_db"
+COLLECTION_NAME = "pubmed_abstracts"
+
+client = chromadb.PersistentClient(path=CHROMA_PATH)
+collection = client.get_collection(name=COLLECTION_NAME)
+
 from flask import Flask, request, jsonify, render_template
-from elasticsearch import Elasticsearch
 
 app = Flask(__name__)
 
-# Connect to the local Elasticsearch server.
-# localhost:9200 is where the Docker Elasticsearch container is running.
-es = Elasticsearch("http://localhost:9200")
-INDEX_NAME = "pubmed"
 APP_URL = "http://127.0.0.1:5000/"
 
 
 def open_browser():
     webbrowser.open(APP_URL)
 
-# Helper function that searches Elasticsearch and returns matching documents.
-def search_abstracts(keyword, size=10):
-    response = es.search(
-        index=INDEX_NAME,
-        query={
-            "match": {
-                "abstract": keyword
-            }
-        },
-        size=size
+# Helper function that searches database and 
+def search_abstracts(query, size=5):
+    response = collection.query(
+        query_texts=[query],
+        n_results=size
     )
-
+    
     results = []
 
-    for hit in response["hits"]["hits"]:
-        results.append(hit["_source"])
+    for pmid, abstract,metadata, distance in zip(
+        response["ids"][0],
+        response["documents"][0],
+        response["metadatas"][0],
+        response["distances"][0]
+    ):
+        results.append({
+            "pmid": pmid,
+            "title": metadata["title"],
+            "abstract": abstract,
+            "distance": distance
+        })
 
     return results
 

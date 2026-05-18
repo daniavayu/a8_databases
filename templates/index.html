@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PubMed Abstract Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 32px;
+            color: #1f2933;
+            background: #f7f8fa;
+        }
+
+        main {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        section {
+            margin-bottom: 28px;
+        }
+
+        form {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        input {
+            padding: 10px;
+            min-width: 220px;
+            border: 1px solid #b7c0cc;
+            border-radius: 4px;
+            font-size: 15px;
+        }
+
+        button {
+            padding: 10px 14px;
+            border: 0;
+            border-radius: 4px;
+            background: #1769aa;
+            color: white;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        article {
+            padding: 14px 0;
+            border-top: 1px solid #d7dde5;
+        }
+
+        .error {
+            color: #b42318;
+            font-weight: bold;
+        }
+
+        .meta {
+            color: #52606d;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <h1>PubMed Abstract Search</h1>
+
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+
+    <section>
+        <h2>Keyword Search</h2>
+        <form action="/keyword_search" method="post">
+            <input type="text" name="keyword" placeholder="Enter a keyword" value="{{ keyword or '' }}">
+            <button type="submit">Search</button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Count Documents</h2>
+        <form action="/count_docs" method="post">
+            <input type="text" name="keyword" placeholder="Required keyword" value="{{ count_keyword or '' }}">
+            <input type="text" name="exclude" placeholder="Optional word to exclude" value="{{ exclude or '' }}">
+            <button type="submit">Count</button>
+        </form>
+    </section>
+
+    {% if count is defined %}
+        <section>
+            <h2>Count Result</h2>
+            <p>
+                Documents containing <strong>{{ count_keyword }}</strong>
+                {% if exclude %}
+                    and excluding <strong>{{ exclude }}</strong>
+                {% endif %}
+                : <strong>{{ count }}</strong>
+            </p>
+        </section>
+    {% endif %}
+
+    {% if results is defined %}
+        <section>
+            <h2>Search Results</h2>
+            <p class="meta">Showing {{ results|length }} results for "{{ keyword }}".</p>
+
+            {% for result in results %}
+                <article>
+                    <h3>{{ result.title }}</h3>
+                    <p class="meta">PMID: {{ result.pmid }}</p>
+                    <p>{{ result.abstract }}</p>
+                </article>
+            {% endfor %}
+
+            {% if results|length == 0 %}
+                <p>No results found.</p>
+            {% endif %}
+        </section>
+    {% endif %}
+</main>
+</body>
+</html>
