@@ -4,3 +4,4 @@ chroma_db/
 *.xml
 __pycache__/
 .venv/
+api_key.env

@@ -53,42 +53,7 @@ def search_abstracts(query, size=5):
 
     return results
 
-
-# Helper function that counts documents matching a keyword, with an optional excluded word.
-def count_matching_docs(keyword, exclude=None):
-    must_conditions = [
-        {
-            "match": {
-                "abstract": keyword
-            }
-        }
-    ]
-
-    must_not_conditions = []
-
-    if exclude:
-        must_not_conditions.append(
-            {
-                "match": {
-                    "abstract": exclude
-                }
-            }
-        )
-
-    response = es.count(
-        index=INDEX_NAME,
-        query={
-            "bool": {
-                "must": must_conditions,
-                "must_not": must_not_conditions
-            }
-        }
-    )
-
-    return response["count"]
-
-
-# Home page with forms for searching and counting documents.
+# Home page with forms for searching documents
 @app.route("/", methods=["GET"])
 def home():
     return render_template("index.html")
@@ -96,77 +61,35 @@ def home():
 
 # Creates an API endpoint called /keyword_search.
 
-@app.route("/keyword_search", methods=["GET", "POST"])
-def keyword_search():
+@app.route("/search", methods=["GET", "POST"])
+def search():
     # GET reads keyword from the URL; POST reads keyword from the HTML form.
     if request.method == "POST":
-        keyword = request.form.get("keyword")
+        query = request.form.get("query")
     else:
-        keyword = request.args.get("keyword")
+        query = request.args.get("query")
 
-    if not keyword:
+    if not query:
         if request.method == "POST":
-            return render_template("index.html", error="Please provide a keyword.")
-        return jsonify({"error": "Please provide a keyword parameter"}), 400
+            return render_template("index.html", error="Please provide a search query.")
+        return jsonify({"error": "Please provide a query parameter"}), 400
 
     # Search the abstract field in the pubmed index for the keyword, and return up to 10 matching documents.
-    results = search_abstracts(keyword)
+    results = search_abstracts(query, size=5)
 
     if request.method == "POST":
         return render_template(
             "index.html",
-            keyword=keyword,
+            query=query,
             results=results
         )
 
     # Returns the search response as JSON: keyword searched,how many results were returned, and actual matching documents
     return jsonify({
-        "keyword": keyword,
+        "query": query,
         "num_results_returned": len(results),
         "results": results
     })
-
-# Placeholder
-@app.route("/keyword_search_with_typo", methods=["GET", "POST"])
-def keyword_search_with_typo():
-    return jsonify({
-        "message": "This endpoint is for Part 3."
-    })
-
-
-# Keyword is required, exclude is optional.
-@app.route("/count_docs", methods=["GET", "POST"])
-def count_docs():
-    if request.method == "POST":
-        keyword = request.form.get("keyword")
-        exclude = request.form.get("exclude")
-    else:
-        keyword = request.args.get("keyword")
-        exclude = request.args.get("exclude")
-
-    if not keyword:
-        if request.method == "POST":
-            return render_template("index.html", error="Please provide a keyword.")
-        return jsonify({"error": "Please provide a keyword parameter"}), 400
-
-    # Asks Elasticsearch to count matching documents.
-    count = count_matching_docs(keyword, exclude)
-
-    if request.method == "POST":
-        return render_template(
-            "index.html",
-            count_keyword=keyword,
-            exclude=exclude,
-            count=count
-        )
-
-    # This returns the count as JSON.
-    return jsonify({
-        "keyword": keyword,
-        "exclude": exclude,
-        "count": count
-    })
-
 
 if __name__ == "__main__":
     if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
