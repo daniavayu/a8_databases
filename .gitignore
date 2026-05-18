@@ -1,0 +1,6 @@
+pubmed25n0001*.xml
+*.xml
+chroma_db/
+*.xml
+__pycache__/
+.venv/
